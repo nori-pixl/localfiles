@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PyScript File Share</title>
+    <!-- PyScriptの読み込み -->
+    <link rel="stylesheet" href="https://pyscript.net" />
+    <script type="module" src="https://pyscript.net"></script>
+    <style>
+        body { font-family: sans-serif; padding: 20px; max-width: 500px; margin: auto; background: #f4f4f9; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        input, button { width: 100%; padding: 12px; margin: 8px 0; box-sizing: border-box; }
+        button { background: #007bff; color: white; border: none; border-radius: 6px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h2>PyScript操作パネル</h2>
+        <input type="text" id="target-url" placeholder="CodespacesのURL (https://...)">
+        <input type="password" id="pw" placeholder="パスワード">
+        <hr>
+        <input type="file" id="file-upload">
+        <button py-click="upload_file">アップロード実行</button>
+        <hr>
+        <button py-click="fetch_files" style="background:#28a745;">ファイルリスト更新</button>
+        <div id="file-list"></div>
+    </div>
+
+    <!-- ここにPythonコードを書く -->
+    <script type="py">
+        from pyscript import document, window
+        import pyodide_http
+        import requests
+
+        # PyScriptで標準のrequestsを使えるようにする魔法
+        pyodide_http.patch_all()
+
+        async def upload_file(event):
+            url = document.querySelector("#target-url").value.strip("/")
+            pw = document.querySelector("#pw").value
+            file_input = document.querySelector("#file-upload")
+            
+            if not file_input.files:
+                window.alert("ファイルを選んでください")
+                return
+
+            file = file_input.files.item(0)
+            # FormDataの作成
+            from js import FormData
+            form_data = FormData.new()
+            form_data.append("file", file)
+
+            try:
+                # Codespacesへ送信
+                response = requests.post(f"{url}/upload", data=form_data, headers={"X-Password": pw})
+                if response.status_code == 200:
+                    window.alert("アップロード成功！")
+                    await fetch_files(None)
+                else:
+                    window.alert("失敗: パスワードを確認してください")
+            except Exception as e:
+                window.alert(f"接続エラー: {e}")
+
+        async def fetch_files(event):
+            url = document.querySelector("#target-url").value.strip("/")
+            pw = document.querySelector("#pw").value
+            
+            try:
+                response = requests.get(f"{url}/files", headers={"X-Password": pw})
+                files = response.json()
+                
+                list_div = document.querySelector("#file-list")
+                list_div.innerHTML = ""
+                for name in files:
+                    # ダウンロードリンクの作成
+                    list_div.innerHTML += f'<div>{name} <a href="{url}/download/{name}?pw={pw}" target="_blank">保存</a></div>'
+            except Exception as e:
+                print(f"Error: {e}")
+    </script>
+</body>
+</html>
