@@ -1,4 +1,3 @@
 flask
 flask-cors
-pyodide-http
-requests
+gunicorn
