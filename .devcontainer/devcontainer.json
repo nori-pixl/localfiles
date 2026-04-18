@@ -1,0 +1,11 @@
+{
+  "name": "Python File Server",
+  "image": "://microsoft.com",
+  "customizations": {
+    "codespaces": {
+      "openFiles": ["app.py"]
+    }
+  },
+  "postCreateCommand": "pip install flask flask-cors",
+  "waitFor": "postCreateCommand"
+}
